@@ -1,0 +1,17 @@
+{
+  "name": "bot-whatsapp-gratis",
+  "version": "1.0.0",
+  "description": "Bot para moderação de grupo do WhatsApp",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.19.5",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "license": "ISC"
+}
