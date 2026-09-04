@@ -1,0 +1,64 @@
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+
+const client = new Client({
+    authStrategy: new LocalAuth({ dataPath: './sessions' }),
+    puppeteer: {
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    }
+});
+
+client.on('qr', (qr) => {
+    console.log('--- QR CODE GERADO ---');
+    qrcode.generate(qr, { small: true });
+});
+
+client.on('ready', () => {
+    console.log('✅ Bot do WhatsApp ativado e protegendo seus grupos!');
+});
+
+const palavrasSpam = [
+    'compre', 'desconto', 'promoção', 'promocao', 'oferta', 
+    'renda extra', 'lucro', 'ganhe dinheiro', 'arrasta pra cima',
+    'http', 'https', 't.me', 'wa.me', 'bit.ly', 'chat.whatsapp'
+];
+
+const regexSpam = new RegExp(palavrasSpam.join('|'), 'i');
+
+client.on('message', async (msg) => {
+    try {
+        const chat = await msg.getChat();
+
+        if (!chat.isGroup) return;
+
+        const authorId = msg.author || msg.from;
+        const isAdmin = chat.participants.some(participant => 
+            participant.id._serialized === authorId && (participant.isAdmin || participant.isSuperAdmin)
+        );
+
+        if (isAdmin) return;
+
+        let deveApagar = false;
+        let motivo = '';
+
+        if (msg.hasMedia && (msg.type === 'image' || msg.type === 'sticker')) {
+            deveApagar = true;
+            motivo = 'Foto/Mídia enviada por não-admin';
+        }
+
+        if (msg.body && regexSpam.test(msg.body)) {
+            deveApagar = true;
+            motivo = 'Anúncio ou link detectado';
+        }
+
+        if (deveApagar) {
+            await msg.delete(true);
+            console.log(`[REMOVIDO] ${motivo} de: ${authorId}`);
+        }
+
+    } catch (error) {
+        console.error('Erro ao processar mensagem:', error);
+    }
+});
+
+client.initialize();
